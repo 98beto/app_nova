@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { ref } from 'vue';
 import AuthLayout from '@/components/AuthLayout.vue';
 import AvatarUploader from '@/components/AvatarUploader.vue';
 import BaseInput from '@/components/BaseInput.vue';
@@ -20,6 +21,7 @@ const form = useForm({
     company_name: '',
     avatar: null as File | null,
 });
+const requestError = ref('');
 const genders = [
     { value: 'prefer_not_to_say', label: 'Prefiero no decirlo' },
     { value: 'female', label: 'Femenino' },
@@ -27,9 +29,18 @@ const genders = [
     { value: 'non_binary', label: 'No binario' },
 ];
 function submit() {
+    requestError.value = '';
     form.post('/register', {
         forceFormData: true,
         onFinish: () => form.reset('password', 'password_confirmation'),
+        onHttpException: () => {
+            requestError.value = 'No se pudo completar la solicitud.';
+            return false;
+        },
+        onNetworkError: () => {
+            requestError.value = 'No se pudo conectar con AppNova.';
+            return false;
+        },
     });
 }
 </script>
@@ -44,7 +55,10 @@ function submit() {
         <form @submit.prevent="submit">
             <FormAlert
                 :message="
-                    form.hasErrors ? 'Revisa los campos indicados.' : undefined
+                    requestError ||
+                    (form.hasErrors
+                        ? 'Revisa los campos indicados.'
+                        : undefined)
                 "
             />
             <AvatarUploader

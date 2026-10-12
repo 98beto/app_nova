@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { ref } from 'vue';
 import AuthLayout from '@/components/AuthLayout.vue';
 import BaseInput from '@/components/BaseInput.vue';
 import FormAlert from '@/components/FormAlert.vue';
@@ -7,8 +8,21 @@ import PasswordInput from '@/components/PasswordInput.vue';
 import PrimaryButton from '@/components/PrimaryButton.vue';
 
 const form = useForm({ email: '', password: '', remember: false });
+const requestError = ref('');
+
 function submit() {
-    form.post('/login', { onFinish: () => form.reset('password') });
+    requestError.value = '';
+    form.post('/login', {
+        onFinish: () => form.reset('password'),
+        onHttpException: () => {
+            requestError.value = 'No se pudo completar la solicitud.';
+            return false;
+        },
+        onNetworkError: () => {
+            requestError.value = 'No se pudo conectar con AppNova.';
+            return false;
+        },
+    });
 }
 </script>
 
@@ -18,7 +32,14 @@ function submit() {
         <h1>Bienvenido de nuevo</h1>
         <p class="form-intro">Ingresa para continuar explorando AppNova.</p>
         <form @submit.prevent="submit">
-            <FormAlert :message="form.errors.email" />
+            <FormAlert
+                :message="
+                    requestError ||
+                    (form.hasErrors
+                        ? 'Revisa los campos indicados.'
+                        : undefined)
+                "
+            />
             <BaseInput
                 id="email"
                 v-model="form.email"

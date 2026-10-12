@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppLogo from './AppLogo.vue';
 
-defineProps<{ title: string; description?: string }>();
+defineProps<{ title: string; description?: string; message?: string }>();
 defineEmits<{ logout: [] }>();
 </script>
 
@@ -16,6 +16,9 @@ defineEmits<{ logout: [] }>();
                 Cerrar sesión
             </button>
         </nav>
+        <p v-if="message" class="form-alert placeholder-alert" role="alert">
+            {{ message }}
+        </p>
         <section>
             <span aria-hidden="true">+</span>
             <h1>{{ title }}</h1>

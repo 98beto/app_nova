@@ -1,11 +1,28 @@
 <?php
 
+use App\Enums\UserRole;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Models\User;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::inertia('/', 'Welcome')->name('home');
+Route::get('/', function (Request $request): RedirectResponse {
+    /** @var User|null $user */
+    $user = $request->user();
+
+    if ($user === null) {
+        return redirect()->route('login');
+    }
+
+    return redirect()->route(match ($user->role) {
+        UserRole::User => 'store',
+        UserRole::Developer => 'developer.dashboard',
+        UserRole::Admin => 'admin.dashboard',
+    });
+})->name('home');
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');

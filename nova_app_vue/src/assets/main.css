@@ -1,6 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800&display=swap');
 
-:root { color: #17233f; background: #f1f5fb; font-family: Manrope, ui-sans-serif, system-ui, sans-serif; }
+:root { color: #17233f; background: #f1f5fb; font-family: Roboto, ui-sans-serif, system-ui, sans-serif; }
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 320px; }
 button, input, select { font: inherit; }
@@ -22,7 +22,7 @@ button, label, select { cursor: pointer; }
 .auth-promo__art span:nth-child(5) { left: 70%; top: 68%; width: 7rem; height: 7rem; }
 .auth-promo__art span:nth-child(6) { left: 42%; top: 2%; width: 4rem; height: 4rem; }
 .auth-promo__copy { z-index: 2; margin-top: auto; }
-.auth-promo__copy h2 { max-width: 10ch; margin: 0 0 1rem; font-size: clamp(2.2rem, 4vw, 3.5rem); line-height: 1; }
+.auth-promo__copy h2 { max-width: 10ch; margin: 0 0 1rem; font-size: clamp(2.2rem, 4vw, 3.5rem); font-weight: 700; line-height: 1; }
 .auth-promo__copy p { max-width: 34rem; color: #d7e4ff; line-height: 1.6; }
 .auth-promo dl { display: flex; gap: 2.5rem; margin: 2rem 0 0; }
 .auth-promo dt { font-size: 1.4rem; font-weight: 800; }
@@ -30,7 +30,7 @@ button, label, select { cursor: pointer; }
 .auth-form-panel { display: grid; place-items: center; padding: clamp(2rem, 5vw, 4.5rem); }
 .auth-form-logo { display: none; }
 .auth-form-content { width: min(100%, 510px); }
-.auth-form-content h1 { margin: 0; font-size: clamp(2rem, 4vw, 2.8rem); letter-spacing: -.04em; }
+.auth-form-content h1 { margin: 0; font-size: clamp(2rem, 4vw, 2.8rem); font-weight: 700; letter-spacing: -.04em; }
 .form-intro { margin: .5rem 0 1.8rem; color: #687795; }
 .field { margin: 0 0 1rem; }
 .field label, .avatar-field > div > label { display: block; margin-bottom: .45rem; font-size: .84rem; font-weight: 700; }
@@ -66,7 +66,7 @@ button, label, select { cursor: pointer; }
 .placeholder-shell nav { display: flex; justify-content: space-between; align-items: center; }
 .placeholder-shell section { width: min(650px, 100%); margin: 15vh auto; padding: clamp(2rem, 6vw, 5rem); text-align: center; border: 1px solid #d8e2f0; border-radius: 2rem; background: white; box-shadow: 0 20px 60px #263b6312; }
 .placeholder-shell section > span { display: inline-grid; place-items: center; width: 4rem; height: 4rem; border-radius: 1.2rem; color: white; background: #276dff; font-size: 2rem; }
-.placeholder-shell h1 { margin: 1.5rem 0 .7rem; font-size: clamp(2rem, 5vw, 3.5rem); line-height: 1; }
+.placeholder-shell h1 { margin: 1.5rem 0 .7rem; font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 700; line-height: 1; }
 .placeholder-shell p { color: #687795; }
 .placeholder-shell .placeholder-alert { width: min(650px, 100%); margin: 2rem auto -10vh; color: #8e1730; }
 

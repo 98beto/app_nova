@@ -1,23 +1,23 @@
-@import 'tailwindcss';
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800&display=swap');
+
+@layer theme, base, components, utilities;
+
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
 @theme inline {
     --font-sans:
-        Instrument Sans, ui-sans-serif, system-ui, sans-serif,
-        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
-        'Noto Color Emoji';
+        Roboto, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
 :root {
     color: #17233f;
     background: #f1f5fb;
-    font-family:
-        Instrument Sans,
-        ui-sans-serif,
-        system-ui,
-        sans-serif;
+    font-family: Roboto, ui-sans-serif, system-ui, sans-serif;
 }
 * {
     box-sizing: border-box;
@@ -156,6 +156,7 @@ select {
     max-width: 10ch;
     margin: 0 0 1rem;
     font-size: clamp(2.2rem, 4vw, 3.5rem);
+    font-weight: 700;
     line-height: 1;
 }
 .auth-promo__copy p {
@@ -191,6 +192,7 @@ select {
 .auth-form-content h1 {
     margin: 0;
     font-size: clamp(2rem, 4vw, 2.8rem);
+    font-weight: 700;
     letter-spacing: -0.04em;
 }
 .form-intro {
@@ -407,10 +409,16 @@ select {
 .placeholder-shell h1 {
     margin: 1.5rem 0 0.7rem;
     font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 700;
     line-height: 1;
 }
 .placeholder-shell p {
     color: #687795;
+}
+.placeholder-shell .placeholder-alert {
+    width: min(650px, 100%);
+    margin: 2rem auto -10vh;
+    color: #8e1730;
 }
 @media (max-width: 800px) {
     .auth-shell {
