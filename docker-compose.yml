@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:18-alpine
+    container_name: app_nova_pgsql
+    environment:
+      POSTGRES_DB: app_nova
+      POSTGRES_USER: app_nova
+      POSTGRES_PASSWORD: app_nova
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+
+volumes:
+  postgres_data:

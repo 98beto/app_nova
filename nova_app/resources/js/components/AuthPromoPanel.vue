@@ -1,0 +1,33 @@
+<template>
+    <aside class="auth-promo" aria-label="Acerca de AppNova">
+        <AppLogo />
+        <div class="auth-promo__art" aria-hidden="true">
+            <span v-for="index in 6" :key="index" />
+        </div>
+        <div class="auth-promo__copy">
+            <h2>Tu próxima app favorita está aquí.</h2>
+            <p>
+                Descubre, compra y publica experiencias digitales confiables en
+                una sola plataforma.
+            </p>
+            <dl>
+                <div>
+                    <dt>12 mil</dt>
+                    <dd>aplicaciones</dd>
+                </div>
+                <div>
+                    <dt>4.8</dt>
+                    <dd>valoración</dd>
+                </div>
+                <div>
+                    <dt>2 M+</dt>
+                    <dd>descargas</dd>
+                </div>
+            </dl>
+        </div>
+    </aside>
+</template>
+
+<script setup lang="ts">
+import AppLogo from './AppLogo.vue';
+</script>
