@@ -18,7 +18,11 @@ class EnsureUserHasRole
     {
         $expectedRole = UserRole::tryFrom($role);
 
-        abort_unless($expectedRole !== null && $request->user()?->role === $expectedRole, 403);
+        abort_unless(
+            $expectedRole !== null && $request->user()?->role === $expectedRole,
+            403,
+            'No tienes permiso para acceder a esta sección.',
+        );
 
         return $next($request);
     }

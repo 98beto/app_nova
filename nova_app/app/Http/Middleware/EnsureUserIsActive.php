@@ -16,7 +16,11 @@ class EnsureUserIsActive
      */
     public function handle(Request $request, Closure $next): Response
     {
-        abort_unless($request->user()?->status === UserStatus::Active, 403);
+        abort_unless(
+            $request->user()?->status === UserStatus::Active,
+            403,
+            'Tu cuenta no está activa.',
+        );
 
         return $next($request);
     }
