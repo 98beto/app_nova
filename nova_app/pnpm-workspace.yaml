@@ -1,5 +1,7 @@
 packages:
     - '.'
 
+ignoreScripts: true
+
 publicHoistPattern:
     - '@inertiajs/core'

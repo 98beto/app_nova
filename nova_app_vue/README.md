@@ -25,8 +25,12 @@ See [Vite Configuration Reference](https://vite.dev/config/).
 
 ## Project Setup
 
+Use pnpm 12.4.1 (pinned in `devEngines.packageManager`) with Node.js 26.11.1,
+the verified version for this project.
+Install pnpm 12.4.1 before running these commands.
+
 ```sh
-pnpm install
+pnpm install --frozen-lockfile
 ```
 
 ### Compile and Hot-Reload for Development
@@ -44,7 +48,7 @@ pnpm build
 ### Run Unit Tests with [Vitest](https://vitest.dev/)
 
 ```sh
-pnpm test:unit
+pnpm test:unit --run
 ```
 
 ### Lint with [ESLint](https://eslint.org/)
