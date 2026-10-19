@@ -3,11 +3,11 @@
 use App\Enums\UserRole;
 use App\Models\User;
 
-test('redirects guests from home to login', function () {
+test('redirige a los visitantes desde la página de inicio al inicio de sesión', function () {
     $this->get(route('home'))->assertRedirect(route('login'));
 });
 
-test('redirects authenticated users from home based on their role', function (
+test('redirige a los usuarios autenticados desde la página de inicio según su rol', function (
     UserRole $role,
     string $routeName,
 ) {
@@ -17,7 +17,7 @@ test('redirects authenticated users from home based on their role', function (
         ->get(route('home'))
         ->assertRedirect(route($routeName));
 })->with([
-    'user' => [UserRole::User, 'store'],
-    'developer' => [UserRole::Developer, 'developer.dashboard'],
-    'admin' => [UserRole::Admin, 'admin.dashboard'],
+    'usuario' => [UserRole::User, 'store'],
+    'desarrollador' => [UserRole::Developer, 'developer.dashboard'],
+    'administrador' => [UserRole::Admin, 'admin.dashboard'],
 ]);
