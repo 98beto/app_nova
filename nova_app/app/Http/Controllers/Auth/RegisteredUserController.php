@@ -7,6 +7,7 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\User;
+use App\Services\Auth\AuthenticationAuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -19,12 +20,16 @@ class RegisteredUserController extends Controller
         return Inertia::render('auth/Register');
     }
 
-    public function store(RegisterRequest $request, CreateUser $createUser): RedirectResponse
-    {
+    public function store(
+        RegisterRequest $request,
+        CreateUser $createUser,
+        AuthenticationAuditLogger $auditLogger,
+    ): RedirectResponse {
         $user = $createUser($request->validated());
 
         Auth::login($user);
         $request->session()->regenerate();
+        $auditLogger->record('register', $user, $request);
 
         return redirect()->to($this->homePath($user));
     }

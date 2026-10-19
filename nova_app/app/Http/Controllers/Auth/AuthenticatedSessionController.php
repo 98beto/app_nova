@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\User;
+use App\Services\Auth\AuthenticationAuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,19 +20,24 @@ class AuthenticatedSessionController extends Controller
         return Inertia::render('auth/Login');
     }
 
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(LoginRequest $request, AuthenticationAuditLogger $auditLogger): RedirectResponse
     {
         $request->authenticate();
         $request->session()->regenerate();
 
         /** @var User $user */
         $user = $request->user();
+        $auditLogger->record('login', $user, $request);
 
         return redirect()->to($this->homePath($user));
     }
 
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request, AuthenticationAuditLogger $auditLogger): RedirectResponse
     {
+        /** @var User|null $user */
+        $user = $request->user();
+        $auditLogger->record('logout', $user, $request);
+
         Auth::guard('web')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
