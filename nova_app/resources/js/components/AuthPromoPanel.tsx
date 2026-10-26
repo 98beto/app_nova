@@ -12,23 +12,9 @@ export default function AuthPromoPanel() {
             <div className="auth-promo__copy">
                 <h2>Tu próxima app favorita está aquí.</h2>
                 <p>
-                    Descubre, compra y publica experiencias digitales confiables
-                    en una sola plataforma.
+                    Descubre nuevas ideas, comparte tu experiencia y publica tus
+                    propias aplicaciones en una sola plataforma.
                 </p>
-                <dl>
-                    <div>
-                        <dt>12 mil</dt>
-                        <dd>aplicaciones</dd>
-                    </div>
-                    <div>
-                        <dt>4.8</dt>
-                        <dd>valoración</dd>
-                    </div>
-                    <div>
-                        <dt>2 M+</dt>
-                        <dd>descargas</dd>
-                    </div>
-                </dl>
             </div>
         </aside>
     );
