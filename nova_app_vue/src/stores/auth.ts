@@ -93,7 +93,6 @@ export const useAuthStore = defineStore('auth', {
 })
 
 export function homeForRole(role: UserRole): string {
-  if (role === 'developer') return '/developer/dashboard'
   if (role === 'admin') return '/admin/dashboard'
   return '/store'
 }

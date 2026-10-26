@@ -1,7 +1,66 @@
 <script setup lang="ts">
-import { reactive } from 'vue'; import { useRouter } from 'vue-router'; import AuthLayout from '@/components/AuthLayout.vue'; import BaseInput from '@/components/BaseInput.vue'; import FormAlert from '@/components/FormAlert.vue'; import PasswordInput from '@/components/PasswordInput.vue'; import PrimaryButton from '@/components/PrimaryButton.vue'; import { homeForRole, useAuthStore } from '@/stores/auth'
-const auth = useAuthStore(); const router = useRouter(); const form = reactive({ email: '', password: '', remember: false })
-function error(field: string) { return auth.errors[field]?.[0] }
-async function submit() { try { await auth.login(form); if (auth.user) await router.push(homeForRole(auth.user.role)) } catch { form.password = '' } }
+import { reactive } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import AuthLayout from '@/components/AuthLayout.vue'
+import BaseInput from '@/components/BaseInput.vue'
+import FormAlert from '@/components/FormAlert.vue'
+import PasswordInput from '@/components/PasswordInput.vue'
+import PrimaryButton from '@/components/PrimaryButton.vue'
+import { homeForRole, useAuthStore } from '@/stores/auth'
+const auth = useAuthStore()
+const router = useRouter()
+const route = useRoute()
+const form = reactive({ email: '', password: '', remember: false })
+function error(field: string) {
+  return auth.errors[field]?.[0]
+}
+async function submit() {
+  try {
+    await auth.login(form)
+    if (auth.user) {
+      const target = route.query.redirect
+      await router.push(
+        auth.user.role !== 'admin' &&
+          typeof target === 'string' &&
+          /^\/(store(?:\/|\?|$)|profile(?:\?|$)|developer\/)/.test(target)
+          ? target
+          : homeForRole(auth.user.role),
+      )
+    }
+  } catch {
+    form.password = ''
+  }
+}
 </script>
-<template><AuthLayout><h1>Bienvenido de nuevo</h1><p class="form-intro">Ingresa para continuar explorando AppNova.</p><form @submit.prevent="submit"><FormAlert :message="auth.message" /><BaseInput id="email" v-model="form.email" label="Correo electrónico" type="email" autocomplete="email" required :error="error('email')" :disabled="auth.loading" /><PasswordInput id="password" v-model="form.password" label="Contraseña" autocomplete="current-password" required :error="error('password')" :disabled="auth.loading" /><label class="remember"><input v-model="form.remember" type="checkbox" :disabled="auth.loading" /> Mantener sesión iniciada</label><PrimaryButton :loading="auth.loading">Iniciar sesión</PrimaryButton></form><p class="form-switch">¿Aún no tienes cuenta? <RouterLink to="/register">Regístrate gratis</RouterLink></p></AuthLayout></template>
+<template>
+  <AuthLayout
+    ><h1>Bienvenido de nuevo</h1>
+    <p class="form-intro">Ingresa para continuar explorando AppNova.</p>
+    <form @submit.prevent="submit">
+      <FormAlert :message="auth.message" /><BaseInput
+        id="email"
+        v-model="form.email"
+        label="Correo electrónico"
+        type="email"
+        autocomplete="email"
+        required
+        :error="error('email')"
+        :disabled="auth.loading"
+      /><PasswordInput
+        id="password"
+        v-model="form.password"
+        label="Contraseña"
+        autocomplete="current-password"
+        required
+        :error="error('password')"
+        :disabled="auth.loading"
+      /><label class="remember"
+        ><input v-model="form.remember" type="checkbox" :disabled="auth.loading" /> Mantener sesión
+        iniciada</label
+      ><PrimaryButton :loading="auth.loading">Iniciar sesión</PrimaryButton>
+    </form>
+    <p class="form-switch">
+      ¿Aún no tienes cuenta? <RouterLink to="/register">Regístrate gratis</RouterLink>
+    </p></AuthLayout
+  >
+</template>

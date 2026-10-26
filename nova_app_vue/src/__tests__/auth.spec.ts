@@ -36,6 +36,7 @@ const user = {
 }
 
 beforeEach(() => {
+  vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
   setActivePinia(createPinia())
   vi.clearAllMocks()
   vi.mocked(initializeCsrf).mockResolvedValue(undefined)
@@ -83,13 +84,22 @@ describe('almacén de autenticación e interfaz de autenticación', () => {
   })
 
   it('registra con datos multiparte, incluida la selección de un perfil de desarrollador', async () => {
-    vi.mocked(apiRequest).mockResolvedValue({ message: 'created', data: { ...user, role: 'developer' } })
+    vi.mocked(apiRequest).mockResolvedValue({
+      message: 'created',
+      data: { ...user, role: 'developer' },
+    })
     const auth = useAuthStore()
     const avatar = new File(['avatar'], 'avatar.png', { type: 'image/png' })
     const payload = {
-      name: 'Ana Nova', email: user.email, gender: 'female' as const, birth_date: '1990-01-01',
-      password: 'secret', password_confirmation: 'secret', role: 'developer' as const,
-      company_name: 'Nova Labs', avatar,
+      name: 'Ana Nova',
+      email: user.email,
+      gender: 'female' as const,
+      birth_date: '1990-01-01',
+      password: 'secret',
+      password_confirmation: 'secret',
+      role: 'developer' as const,
+      company_name: 'Nova Labs',
+      avatar,
     }
 
     await auth.register(payload)
@@ -115,10 +125,14 @@ describe('almacén de autenticación e interfaz de autenticación', () => {
   })
 
   it('expone los errores de validación y desactiva el estado de carga tras un inicio de sesión fallido', async () => {
-    vi.mocked(apiRequest).mockRejectedValue(new ApiError(422, 'Datos inválidos', { email: ['Correo inválido'] }))
+    vi.mocked(apiRequest).mockRejectedValue(
+      new ApiError(422, 'Datos inválidos', { email: ['Correo inválido'] }),
+    )
     const auth = useAuthStore()
 
-    await expect(auth.login({ email: 'bad', password: 'x', remember: false })).rejects.toBeInstanceOf(ApiError)
+    await expect(
+      auth.login({ email: 'bad', password: 'x', remember: false }),
+    ).rejects.toBeInstanceOf(ApiError)
 
     expect(auth.errors).toEqual({ email: ['Correo inválido'] })
     expect(auth.message).toBe('Datos inválidos')
@@ -127,7 +141,10 @@ describe('almacén de autenticación e interfaz de autenticación', () => {
 
   it('envía el formulario de inicio de sesión y navega al inicio del rol recibido', async () => {
     vi.mocked(apiRequest).mockResolvedValue({ message: 'ok', data: { ...user, role: 'developer' } })
-    const viewRouter = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', component: { template: '<div />' } }] })
+    const viewRouter = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/', component: { template: '<div />' } }],
+    })
     await viewRouter.push('/')
     const push = vi.spyOn(viewRouter, 'push').mockResolvedValue(undefined)
     const wrapper = mount(LoginView, { global: { plugins: [viewRouter, createPinia()] } })
@@ -137,13 +154,19 @@ describe('almacén de autenticación e interfaz de autenticación', () => {
     await wrapper.get('form').trigger('submit')
     await flushPromises()
 
-    expect(push).toHaveBeenCalledWith('/developer/dashboard')
+    expect(push).toHaveBeenCalledWith('/store')
     push.mockRestore()
   })
 
   it('muestra el campo de empresa del desarrollador y envía los datos de registro', async () => {
-    vi.mocked(apiRequest).mockResolvedValue({ message: 'created', data: { ...user, role: 'developer' } })
-    const viewRouter = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', component: { template: '<div />' } }] })
+    vi.mocked(apiRequest).mockResolvedValue({
+      message: 'created',
+      data: { ...user, role: 'developer' },
+    })
+    const viewRouter = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/', component: { template: '<div />' } }],
+    })
     await viewRouter.push('/')
     const push = vi.spyOn(viewRouter, 'push').mockResolvedValue(undefined)
     const wrapper = mount(RegisterView, { global: { plugins: [viewRouter, createPinia()] } })
@@ -160,17 +183,20 @@ describe('almacén de autenticación e interfaz de autenticación', () => {
     await wrapper.get('form').trigger('submit')
     await flushPromises()
 
-    expect(apiRequest).toHaveBeenCalledWith('/api/v1/auth/register', expect.objectContaining({ method: 'POST' }))
-    expect(push).toHaveBeenCalledWith('/developer/dashboard')
+    expect(apiRequest).toHaveBeenCalledWith(
+      '/api/v1/auth/register',
+      expect.objectContaining({ method: 'POST' }),
+    )
+    expect(push).toHaveBeenCalledWith('/store')
     push.mockRestore()
   })
 
   it('redirige a los usuarios no autenticados desde las rutas protegidas conservando la ruta original', async () => {
     vi.mocked(apiRequest).mockRejectedValue(new ApiError(401, 'Unauthenticated'))
 
-    await router.push('/store')
+    await router.push('/profile')
 
-    expect(router.currentRoute.value.fullPath).toBe('/login?redirect=/store')
+    expect(router.currentRoute.value.fullPath).toBe('/login?redirect=/profile')
   })
 
   it('redirige a un usuario autenticado cuando accede a una ruta de otro rol', async () => {
@@ -179,5 +205,38 @@ describe('almacén de autenticación e interfaz de autenticación', () => {
     await router.push('/admin/dashboard')
 
     expect(router.currentRoute.value.path).toBe(homeForRole('developer'))
+  })
+
+  it('permite consultar el catálogo y su detalle sin sesión', async () => {
+    vi.mocked(apiRequest).mockRejectedValue(new ApiError(401, 'Unauthenticated'))
+    await router.push('/store?free=1')
+    expect(router.currentRoute.value.fullPath).toBe('/store?free=1')
+    await router.push('/store/42')
+    expect(router.currentRoute.value.path).toBe('/store/42')
+  })
+
+  it('permite al desarrollador explorar la misma tienda sin redirigirlo a su panel', async () => {
+    vi.mocked(apiRequest).mockResolvedValue({ data: { ...user, role: 'developer' } })
+    await router.push('/store')
+    expect(router.currentRoute.value.path).toBe('/store')
+    expect(homeForRole('developer')).toBe('/store')
+    expect(homeForRole('admin')).toBe('/admin/dashboard')
+  })
+
+  it('vuelve al detalle solicitado después del inicio de sesión', async () => {
+    vi.mocked(apiRequest).mockResolvedValue({ data: user })
+    const viewRouter = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/login', component: LoginView }],
+    })
+    await viewRouter.push('/login?redirect=/store/42')
+    const push = vi.spyOn(viewRouter, 'push').mockResolvedValue(undefined)
+    const wrapper = mount(LoginView, { global: { plugins: [viewRouter, createPinia()] } })
+    await wrapper.get('#email').setValue(user.email)
+    await wrapper.get('#password').setValue('secret')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+    expect(push).toHaveBeenCalledWith('/store/42')
+    push.mockRestore()
   })
 })
