@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Api\V1\Auth\RegisteredUserController;
 use App\Http\Controllers\DeveloperApplicationController;
 use App\Http\Controllers\DownloadController;
+use App\Http\Controllers\LibraryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\StoreController;
@@ -25,6 +26,7 @@ Route::prefix('v1')->group(function (): void {
     Route::get('/categories', [StoreController::class, 'categories']);
     Route::middleware(['auth:sanctum', 'active'])->group(function (): void {
         Route::middleware('role:user,developer')->group(function (): void {
+            Route::get('/library', [LibraryController::class, 'index']);
             Route::get('/profile', [ProfileController::class, 'show']);
             Route::patch('/profile', [ProfileController::class, 'update']);
             Route::post('/applications/{application}/downloads', [DownloadController::class, 'store']);

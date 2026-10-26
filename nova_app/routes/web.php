@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\DeveloperApplicationController;
 use App\Http\Controllers\DownloadController;
+use App\Http\Controllers\LibraryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\StoreController;
@@ -50,6 +51,7 @@ Route::middleware('auth')->group(function (): void {
             Route::post('/developer/applications', [DeveloperApplicationController::class, 'store'])->name('developer.applications.store');
         });
         Route::middleware('role:user,developer')->group(function (): void {
+            Route::get('/library', [LibraryController::class, 'index'])->name('library.index');
             Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
             Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
             Route::post('/store/{application}/downloads', [DownloadController::class, 'store'])->name('downloads.store');

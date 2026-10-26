@@ -33,6 +33,11 @@ const router = createRouter({
     { path: '/store', component: () => import('@/views/StoreView.vue') },
     { path: '/store/:id', component: () => import('@/views/ApplicationView.vue') },
     {
+      path: '/library',
+      component: () => import('@/views/LibraryView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/profile',
       component: () => import('@/views/ProfileView.vue'),
       meta: { requiresAuth: true },
@@ -73,6 +78,9 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
+  if (to.path === '/profile' && to.hash === '#library') {
+    return { path: '/library', query: { library_page: to.query.library_page }, replace: true }
+  }
   if (to.path === '/developer/dashboard' && to.query.publish === '1') {
     const { publish: _publish, ...query } = to.query
     return { path: '/developer/applications/create', query, hash: '', replace: true }
@@ -83,7 +91,8 @@ router.beforeEach(async (to) => {
   if (to.meta.requiresAuth && !auth.user)
     return { path: '/login', query: { redirect: to.fullPath } }
   if (to.meta.guestOnly && auth.user) return homeForRole(auth.user.role)
-  if (to.path === '/profile' && auth.user?.role === 'admin') return '/admin/dashboard'
+  if (['/profile', '/library'].includes(to.path) && auth.user?.role === 'admin')
+    return '/admin/dashboard'
   if (to.meta.role && auth.user?.role !== to.meta.role) {
     return auth.user ? homeForRole(auth.user.role) : '/login'
   }

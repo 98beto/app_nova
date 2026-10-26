@@ -12,6 +12,7 @@ import type {
   ApplicationDetailBundle,
   CatalogueBundle,
   DeveloperBundle,
+  LibraryBundle,
   ProfileBundle,
   StoreApplication,
 } from '@/types/store'
@@ -19,6 +20,7 @@ import StoreView from '@/views/StoreView.vue'
 import ApplicationView from '@/views/ApplicationView.vue'
 import PublicationForm from '@/components/store/PublicationForm.vue'
 import ProfileView from '@/views/ProfileView.vue'
+import LibraryView from '@/views/LibraryView.vue'
 import DeveloperDashboardView from '@/views/DeveloperDashboardView.vue'
 import DeveloperCreateView from '@/views/DeveloperCreateView.vue'
 
@@ -108,9 +110,32 @@ function deferred<T>() {
 function profileBundle(): ProfileBundle {
   return {
     profile: { ...user },
-    library: { data: [], meta },
     reviews: { data: [], meta },
     summary: { downloads_count: 0, reviews_count: 0 },
+  }
+}
+function libraryBundle(): LibraryBundle {
+  return {
+    library: {
+      data: [
+        {
+          id: 1,
+          application_id: 42,
+          downloaded_at: '2026-10-25',
+          application: { ...app, installed: true },
+          available: true,
+        },
+        {
+          id: 2,
+          application_id: 99,
+          downloaded_at: '2026-10-24',
+          application: null,
+          available: false,
+        },
+      ],
+      meta: { ...meta, total: 13, last_page: 2 },
+    },
+    summary: { downloads_count: 13 },
   }
 }
 function mockPreviews() {
@@ -148,6 +173,36 @@ afterEach(() => {
 })
 
 describe('contrato de tienda y orden de solicitudes', () => {
+  it.each(['response', 'error'] as const)(
+    'descarta biblioteca pendiente (%s) y limpia recursos al cambiar identidad',
+    async (outcome) => {
+      const auth = useAuthStore()
+      auth.user = user
+      const store = useStore()
+      vi.mocked(apiRequest).mockResolvedValueOnce(libraryBundle())
+      await store.loadLibrary()
+      expect(store.library.data?.summary.downloads_count).toBe(13)
+      const pending = deferred<LibraryBundle>()
+      vi.mocked(apiRequest).mockReturnValueOnce(pending.promise)
+      const old = store.loadLibrary('2')
+      auth.user = { ...user, id: 8 }
+      expect(store.library).toMatchObject({ data: null, loading: false, error: '' })
+      const current = libraryBundle()
+      current.library.data = []
+      current.summary.downloads_count = 0
+      vi.mocked(apiRequest).mockResolvedValueOnce(current)
+      await store.loadLibrary()
+      if (outcome === 'response') pending.resolve(libraryBundle())
+      else pending.reject(new ApiError(401, 'Sesión anterior'))
+      await old
+      expect(store.library.data).toEqual(current)
+      expect(store.library.error).toBe('')
+      expect(auth.user?.id).toBe(8)
+      auth.user = null
+      expect(store.library).toMatchObject({ data: null, loading: false, error: '' })
+    },
+  )
+
   it('obtiene populares y tendencias mediante ordenaciones reales del backend', async () => {
     vi.mocked(apiRequest).mockResolvedValue(catalogue())
     const store = useStore()
@@ -318,7 +373,6 @@ describe('contrato de tienda y orden de solicitudes', () => {
     const store = useStore()
     vi.mocked(apiRequest).mockResolvedValue({
       profile: { ...user, name: 'Nuevo nombre' },
-      library: { data: [], meta },
       reviews: { data: [], meta },
       summary: { downloads_count: 0, reviews_count: 0 },
     })
@@ -351,6 +405,121 @@ describe('contrato de tienda y orden de solicitudes', () => {
 })
 
 describe('interacciones de las vistas', () => {
+  it('pagina reseñas del perfil sin consultar instalaciones ni reenviar library_page', async () => {
+    const pinia = createPinia()
+    useAuthStore(pinia).user = user
+    const bundle = profileBundle()
+    bundle.summary.downloads_count = 13
+    bundle.reviews.meta = { ...meta, last_page: 2, total: 13 }
+    bundle.reviews.data = [
+      {
+        id: 8,
+        application_id: 42,
+        author: { id: user.id, name: user.name, avatar_url: null },
+        rating: 4,
+        body: 'Mi experiencia',
+        likes_count: 0,
+        liked: false,
+        is_own: true,
+        created_at: null,
+        updated_at: null,
+      },
+    ]
+    vi.mocked(apiRequest).mockResolvedValue(bundle)
+    const viewRouter = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/profile', component: ProfileView }],
+    })
+    await viewRouter.push('/profile?library_page=9')
+    const wrapper = mount(ProfileView, { global: { plugins: [pinia, viewRouter] } })
+    await flushPromises()
+    expect(wrapper.get('.store-profile-summary').text()).toContain('13')
+    expect(wrapper.get('.store-review-list').text()).toContain('Mi experiencia')
+    expect(wrapper.get('.store-edit-review').attributes('href')).toBe('/store/42#reviews')
+    expect(wrapper.find('.store-library-item').exists()).toBe(false)
+    await wrapper.findAll('.store-pagination button')[1]!.trigger('click')
+    await flushPromises()
+    expect(viewRouter.currentRoute.value.query.reviews_page).toBe('2')
+    expect(vi.mocked(apiRequest).mock.calls.map(([path]) => path)).toEqual([
+      '/api/v1/profile',
+      '/api/v1/profile?reviews_page=2',
+    ])
+    wrapper.unmount()
+  })
+
+  it.each(['guest', 'user', 'developer', 'admin'] as const)(
+    'protege biblioteca para %s',
+    async (role) => {
+      const auth = useAuthStore()
+      auth.user = role === 'guest' ? null : { ...user, role }
+      auth.initialized = true
+      await router.push('/store')
+      await router.push('/library?library_page=2')
+      expect(router.currentRoute.value.fullPath).toBe(
+        role === 'guest'
+          ? '/login?redirect=/library?library_page=2'
+          : role === 'admin'
+            ? '/admin/dashboard'
+            : '/library?library_page=2',
+      )
+    },
+  )
+
+  it('redirige biblioteca antigua preservando su página', async () => {
+    const auth = useAuthStore()
+    auth.user = user
+    auth.initialized = true
+    await router.push('/profile?library_page=2&reviews_page=3#library')
+    expect(router.currentRoute.value.fullPath).toBe('/library?library_page=2')
+  })
+
+  it.each(['user', 'developer'] as const)(
+    'biblioteca %s carga solo instalaciones, reintenta y pagina',
+    async (role) => {
+      const pinia = createPinia()
+      useAuthStore(pinia).user = { ...user, role }
+      vi.mocked(apiRequest).mockRejectedValueOnce(new ApiError(500, 'Biblioteca no disponible'))
+      const viewRouter = createRouter({
+        history: createMemoryHistory(),
+        routes: [{ path: '/library', component: LibraryView }],
+      })
+      await viewRouter.push('/library')
+      const wrapper = mount(LibraryView, { global: { plugins: [pinia, viewRouter] } })
+      await flushPromises()
+      expect(wrapper.get('h1').text()).toBe('Mi biblioteca')
+      expect(wrapper.text()).toContain('Biblioteca no disponible')
+      vi.mocked(apiRequest).mockResolvedValueOnce(libraryBundle())
+      await wrapper.get('.store-empty button').trigger('click')
+      await flushPromises()
+      const items = wrapper.findAll('.store-library-item')
+      expect(items).toHaveLength(2)
+      expect(items[0]!.get('h3').text()).toBe('Notas')
+      expect(items[0]!.find('.store-app-icon').exists()).toBe(true)
+      expect(items[0]!.get('.store-muted').text()).toContain('Instalada ·')
+      expect(items[0]!.get('a').attributes('href')).toBe('/store/42')
+      expect(items[0]!.get('.store-library-review').attributes('href')).toBe('/store/42#reviews')
+      expect(items[1]!.text()).toContain('Aplicación no disponible')
+      expect(items[1]!.find('a').exists()).toBe(false)
+      expect(wrapper.get('.store-nav [aria-current="page"]').text()).toBe('Biblioteca')
+      expect(wrapper.find('.store-profile-card').exists()).toBe(false)
+      expect(wrapper.find('.store-review-list').exists()).toBe(false)
+      const empty = libraryBundle()
+      empty.library = { data: [], meta: { ...meta, current_page: 2, last_page: 2, total: 13 } }
+      vi.mocked(apiRequest).mockResolvedValueOnce(empty)
+      await wrapper.findAll('.store-pagination button')[1]!.trigger('click')
+      await flushPromises()
+      expect(viewRouter.currentRoute.value.fullPath).toBe('/library?library_page=2')
+      expect(wrapper.text()).toContain('Tu biblioteca está por descubrir')
+      expect(wrapper.findAll('.store-library-item')).toHaveLength(0)
+      expect(vi.mocked(apiRequest).mock.calls.map(([path]) => path)).toEqual([
+        '/api/v1/library?library_page=1',
+        '/api/v1/library?library_page=1',
+        '/api/v1/library?library_page=2',
+      ])
+      wrapper.unmount()
+    },
+  )
+
   it.each([
     ['/developer/applications?page=2', '/developer/dashboard?page=2'],
     ['/developer/applications?publish=1#publish', '/developer/applications/create'],
@@ -414,6 +583,7 @@ describe('interacciones de las vistas', () => {
       expect(wrapper.findAll('.store-nav a').map((node) => node.text())).toEqual([
         'Dashboard',
         'Publicar app',
+        'Biblioteca',
         'Mi cuenta',
       ])
       expect(wrapper.get('.store-section-heading a').attributes('href')).toBe(
@@ -484,6 +654,12 @@ describe('interacciones de las vistas', () => {
         wrapper.findAll('.store-payment-card a').map((node) => node.attributes('href')),
       ).toEqual(role === 'developer' ? ['/developer/applications/create'] : [])
       expect(wrapper.get('.store-nav [aria-current="page"]').text()).toBe('Mi cuenta')
+      expect(wrapper.find('.store-library-list').exists()).toBe(false)
+      expect(wrapper.find('#library').exists()).toBe(false)
+      expect(wrapper.get('.store-profile-summary a').attributes('href')).toBe('/library')
+      expect(wrapper.find('#my-reviews').exists()).toBe(true)
+      expect(apiRequest).toHaveBeenCalledTimes(1)
+      expect(apiRequest).toHaveBeenCalledWith('/api/v1/profile')
       wrapper.unmount()
     },
   )
@@ -621,8 +797,8 @@ describe('interacciones de las vistas', () => {
 
   it.each([
     {
-      path: '/profile#library',
-      target: 'library',
+      path: '/profile#my-reviews',
+      target: 'my-reviews',
       component: ProfileView,
       response: profileBundle,
     },
@@ -673,7 +849,7 @@ describe('interacciones de las vistas', () => {
       history: createMemoryHistory(),
       routes: [{ path: '/profile', component: ProfileView }],
     })
-    await viewRouter.push('/profile#library')
+    await viewRouter.push('/profile#missing')
     const wrapper = mount(ProfileView, {
       attachTo: document.body,
       global: { plugins: [createPinia(), viewRouter] },
@@ -779,7 +955,7 @@ describe('interacciones de las vistas', () => {
         { path: '/store', component: { template: '<div>Catálogo</div>' } },
       ],
     })
-    await viewRouter.push('/profile?library_page=2')
+    await viewRouter.push('/profile?reviews_page=2')
     const wrapper = mount(
       { template: '<RouterView />' },
       { global: { plugins: [pinia, viewRouter] } },

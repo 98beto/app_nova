@@ -15,7 +15,7 @@ class ProfileController extends Controller
 {
     public function show(Request $request, StoreQuery $query): JsonResponse|Response
     {
-        $request->validate(['library_page' => ['sometimes', 'integer', 'min:1'], 'reviews_page' => ['sometimes', 'integer', 'min:1']]);
+        $request->validate(['reviews_page' => ['sometimes', 'integer', 'min:1']]);
         $data = $query->profile($request);
 
         return $request->is('api/*') || $request->expectsJson() ? response()->json($data) : Inertia::render('profile/Show', $data);

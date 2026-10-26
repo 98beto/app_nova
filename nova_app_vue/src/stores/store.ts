@@ -11,6 +11,7 @@ import type {
   DeveloperBundle,
   InstallBundle,
   LikeBundle,
+  LibraryBundle,
   ProfileBundle,
   ProfileInput,
   PublicationInput,
@@ -32,6 +33,7 @@ export const useStore = defineStore('store', () => {
   const categories = reactive(resource<{ categories: Category[] }>())
   const developerDetail = reactive(resource<DeveloperApplicationBundle>())
   const profile = reactive(resource<ProfileBundle>())
+  const library = reactive(resource<LibraryBundle>())
   const saving = ref(false)
   const actionError = ref('')
   const fieldErrors = ref<Record<string, string[]>>({})
@@ -54,6 +56,7 @@ export const useStore = defineStore('store', () => {
       categories,
       developerDetail,
       profile,
+      library,
     ]) {
       state.sequence++
       state.data = null
@@ -134,11 +137,18 @@ export const useStore = defineStore('store', () => {
     }
     if (router.currentRoute.value.path === '/profile') {
       const query = new URLSearchParams()
-      for (const key of ['library_page', 'reviews_page']) {
+      for (const key of ['reviews_page']) {
         const value = router.currentRoute.value.query[key]
         if (typeof value === 'string') query.set(key, value)
       }
       void load(profile, `/api/v1/profile?${query}`)
+    }
+    if (router.currentRoute.value.path === '/library') {
+      const page = router.currentRoute.value.query.library_page
+      void load(
+        library,
+        `/api/v1/library?library_page=${encodeURIComponent(typeof page === 'string' ? page : '1')}`,
+      )
     }
     for (const state of [catalogue, popular, trending]) {
       if (state.data)
@@ -268,6 +278,7 @@ export const useStore = defineStore('store', () => {
     categories,
     developerDetail,
     profile,
+    library,
     saving,
     actionError,
     fieldErrors,
@@ -289,6 +300,8 @@ export const useStore = defineStore('store', () => {
     loadDeveloperDetail: (id: string) =>
       load(developerDetail, `/api/v1/developer/applications/${encodeURIComponent(id)}`),
     loadProfile: (query = '') => load(profile, `/api/v1/profile${query ? `?${query}` : ''}`),
+    loadLibrary: (page = '1') =>
+      load(library, `/api/v1/library?library_page=${encodeURIComponent(page)}`),
     install,
     saveReview,
     likeReview,

@@ -116,9 +116,15 @@ export type StoreProfile = {
     };
 };
 
-/** profile/Show; profile GET/PATCH responses. library_page and reviews_page paginate separately. */
+/** profile/Show; profile GET/PATCH responses. Reviews paginate with reviews_page. */
 export type ProfileBundle = {
     profile: StoreProfile;
+    reviews: Page<StoreReview>;
+    summary: { downloads_count: number; reviews_count: number };
+};
+
+/** library/Index; GET /api/v1/library. Paginated with library_page, 12 rows per page. */
+export type LibraryBundle = {
     library: Page<{
         id: number;
         application_id: number;
@@ -126,8 +132,7 @@ export type ProfileBundle = {
         application: StoreApplication | null;
         available: boolean;
     }>;
-    reviews: Page<StoreReview>;
-    summary: { downloads_count: number; reviews_count: number };
+    summary: { downloads_count: number };
 };
 
 /** POST /applications/{id}/downloads returns 200 for both initial and repeated install. */

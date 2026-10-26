@@ -7,6 +7,7 @@ import AuthPromoPanel from '@/components/AuthPromoPanel';
 import Dashboard from '@/pages/developer/Dashboard';
 import Create from '@/pages/developer/Create';
 import Profile from '@/pages/profile/Show';
+import Library from '@/pages/library/Index';
 import Show from '@/pages/store/Show';
 import Index from '@/pages/store/Index';
 import type { Auth, User } from '@/types/auth';
@@ -27,14 +28,17 @@ vi.mock('@inertiajs/react', () => ({
         href,
         children,
         className,
+        'aria-current': ariaCurrent,
     }: {
         href: string | { url: string };
         children: ReactNode;
         className?: string;
+        'aria-current'?: 'page';
     }) => (
         <a
             href={typeof href === 'string' ? href : href.url}
             className={className}
+            aria-current={ariaCurrent}
         >
             {children}
         </a>
@@ -165,7 +169,7 @@ describe('store interaction and navigation contracts', () => {
             .split('</nav>')[0];
         for (const nav of [desktop, mobile]) {
             expect(nav.match(/<a /g)).toHaveLength(4);
-            expect(nav).toContain('href="/profile#library"');
+            expect(nav).toContain('href="/library"');
             expect(nav).toContain('href="/profile"');
         }
     });
@@ -401,27 +405,81 @@ describe('store interaction and navigation contracts', () => {
             panel.split('<nav class="store-nav"')[1],
             panel.split('<nav class="store-bottom-nav"')[1],
         ]) {
-            expect(nav.split('</nav>')[0].match(/<a /g)).toHaveLength(3);
+            expect(nav.split('</nav>')[0].match(/<a /g)).toHaveLength(4);
+            expect(nav.split('</nav>')[0]).toContain('href="/library"');
         }
         expect(panel).toContain('Ir a la tienda');
     });
 
-    it('preserves independent profile pagination parameters', () => {
-        page.url = '/profile?library_page=3&reviews_page=2';
+    it.each([
+        {
+            role: 'developer',
+            destinations: [
+                '/developer/dashboard',
+                '/developer/applications/create',
+                '/library',
+                '/profile',
+            ],
+        },
+        {
+            role: 'user',
+            destinations: [
+                '/store',
+                '/store?sort=trending',
+                '/library',
+                '/profile',
+            ],
+        },
+    ] as const)(
+        'renders the complete desktop and mobile library navigation for $role',
+        ({ role, destinations }) => {
+            page.props.auth.user = { ...user, role };
+            page.url = '/library';
+            const html = renderToStaticMarkup(
+                <StoreLayout title="Biblioteca" active="library">
+                    Contenido
+                </StoreLayout>,
+            );
+            const desktop = html
+                .split('<nav class="store-nav"')[1]
+                .split('</nav>')[0];
+            const mobile = html
+                .split('<nav class="store-bottom-nav"')[1]
+                .split('</nav>')[0];
+
+            for (const nav of [desktop, mobile]) {
+                for (const destination of destinations) {
+                    expect(nav).toContain(`href="${destination}"`);
+                }
+                expect(nav.match(/<a /g)).toHaveLength(4);
+                expect(nav).toMatch(
+                    /href="\/library"[^>]*class="store-nav-active"[^>]*aria-current="page"/,
+                );
+                expect(nav).toContain('Biblioteca');
+            }
+            expect(html).toContain(
+                role === 'developer'
+                    ? 'ESPACIO DE DESARROLLADOR'
+                    : 'DESCUBRE TU PRÓXIMA APP',
+            );
+        },
+    );
+
+    it('paginates profile reviews separately from the library page', () => {
+        page.url = '/profile?reviews_page=2';
         const html = renderToStaticMarkup(
             <Pagination
                 meta={{ ...meta, current_page: 2, last_page: 4 }}
                 parameter="reviews_page"
             />,
         );
-        expect(html).toContain('/profile?library_page=3&amp;reviews_page=1');
-        expect(html).toContain('/profile?library_page=3&amp;reviews_page=3');
+        expect(html).toContain('/profile?reviews_page=1');
+        expect(html).toContain('/profile?reviews_page=3');
     });
 
     it('shows unavailable library entries without a broken application link', () => {
         const html = renderToStaticMarkup(
-            <Profile
-                profile={{ ...user, role: 'user' }}
+            <Library
                 library={{
                     data: [
                         {
@@ -434,13 +492,109 @@ describe('store interaction and navigation contracts', () => {
                     ],
                     meta,
                 }}
-                reviews={{ data: [], meta }}
-                summary={{ downloads_count: 1, reviews_count: 0 }}
+                summary={{ downloads_count: 1 }}
             />,
         );
         expect(html).toContain('Aplicación no disponible');
         expect(html).not.toContain('href="/store/999"');
-        expect(html).toContain('Todavía no has compartido una reseña');
+        expect(html).not.toContain('Mis reseñas');
+        expect(html).not.toContain('Editar perfil');
+    });
+
+    it.each(['user', 'developer'] as const)(
+        'keeps account reviews and the linked library count separate for %s',
+        (role) => {
+            page.props.auth.user = { ...user, role };
+            page.url = '/profile';
+            const html = renderToStaticMarkup(
+                <Profile
+                    profile={{ ...user, role }}
+                    reviews={{ data: [ownReview], meta }}
+                    summary={{ downloads_count: 13, reviews_count: 1 }}
+                />,
+            );
+            expect(html).toContain('href="/library" class="store-panel"');
+            expect(html).toContain('<strong>13</strong>');
+            expect(html).toContain('Mi opinión.');
+            expect(html).toContain('Ver aplicación y editar reseña');
+            expect(html).toContain('Editar perfil');
+            expect(html).not.toContain('store-library-list');
+            expect(html).not.toContain('Paginación library_page');
+            for (const nav of [
+                html.split('<nav class="store-nav"')[1],
+                html.split('<nav class="store-bottom-nav"')[1],
+            ]) {
+                expect(nav.split('</nav>')[0]).toMatch(
+                    /href="\/profile"[^>]*aria-current="page"/,
+                );
+                expect(nav.split('</nav>')[0]).not.toMatch(
+                    /href="\/library"[^>]*aria-current="page"/,
+                );
+            }
+        },
+    );
+
+    it.each(['user', 'developer'] as const)(
+        'renders installed apps and active library navigation for %s',
+        (role) => {
+            page.props.auth.user = { ...user, role };
+            page.url = '/library';
+            const html = renderToStaticMarkup(
+                <Library
+                    library={{
+                        data: [
+                            {
+                                id: 1,
+                                application_id: app.id,
+                                downloaded_at: '2026-10-25T12:00:00Z',
+                                application: app,
+                                available: true,
+                            },
+                        ],
+                        meta: {
+                            ...meta,
+                            per_page: 12,
+                            last_page: 2,
+                            total: 13,
+                        },
+                    }}
+                    summary={{ downloads_count: 13 }}
+                />,
+            );
+            expect(html).toContain('Real App');
+            expect(html).toContain('Instalada ·');
+            expect(html).toContain('href="/store/7"');
+            expect(html).toContain('href="/store/7#reviews"');
+            expect(html).toContain('Escribir o editar reseña');
+            expect(html).toContain('/library?library_page=2');
+            expect(html).not.toContain('Editar perfil');
+            expect(html).not.toContain('Mis reseñas');
+            expect(html).not.toContain('PayPal');
+            for (const nav of [
+                html.split('<nav class="store-nav"')[1],
+                html.split('<nav class="store-bottom-nav"')[1],
+            ]) {
+                expect(nav.split('</nav>')[0]).toMatch(
+                    /href="\/library"[^>]*aria-current="page"/,
+                );
+                expect(nav.split('</nav>')[0]).not.toMatch(
+                    /href="\/profile"[^>]*aria-current="page"/,
+                );
+            }
+        },
+    );
+
+    it('offers catalogue discovery for an empty library', () => {
+        page.url = '/library';
+        const html = renderToStaticMarkup(
+            <Library
+                library={{ data: [], meta }}
+                summary={{ downloads_count: 0 }}
+            />,
+        );
+        expect(html).toContain('Tu biblioteca está por descubrir');
+        expect(html).toContain('Explora el catálogo');
+        expect(html).not.toContain('Paginación library_page');
     });
 
     it('keeps the dashboard limited to four stats and the paginated own app list', () => {
@@ -495,17 +649,15 @@ describe('store interaction and navigation contracts', () => {
         );
     });
 
-    it('preserves a library anchor without treating it as a query value', () => {
-        page.url = '/profile?reviews_page=2#library';
+    it('paginates the dedicated library without profile parameters', () => {
+        page.url = '/library';
         const html = renderToStaticMarkup(
             <Pagination
                 meta={{ ...meta, last_page: 2 }}
                 parameter="library_page"
             />,
         );
-        expect(html).toContain(
-            '/profile?reviews_page=2&amp;library_page=2#library',
-        );
+        expect(html).toContain('/library?library_page=2');
         expect(html).not.toContain('%23library');
     });
 
@@ -537,7 +689,6 @@ describe('store interaction and navigation contracts', () => {
             const html = renderToStaticMarkup(
                 <Profile
                     profile={{ ...user, role }}
-                    library={{ data: [], meta }}
                     reviews={{ data: [], meta }}
                     summary={{ downloads_count: 0, reviews_count: 0 }}
                 />,

@@ -119,12 +119,23 @@ class StoreQuery
     public function profile(Request $request): array
     {
         $user = $request->user();
-        $library = Download::query()->where('user_id', $user->id)->orderByDesc('downloaded_at')->orderByDesc('id')->paginate(12, ['*'], 'library_page');
-        $applications = $this->applications($user)->visible()->whereIn('id', $library->getCollection()->pluck('application_id'))->get()->keyBy('id');
         $reviews = $this->reviews($user)->where('user_id', $user->id)->latest('id')->paginate(10, ['*'], 'reviews_page');
 
         return [
             'profile' => (new UserResource($user->load('developerProfile')))->resolve($request),
+            'reviews' => ['data' => ReviewResource::collection($reviews->getCollection())->resolve($request), 'meta' => $this->meta($reviews)],
+            'summary' => ['downloads_count' => Download::query()->where('user_id', $user->id)->count(), 'reviews_count' => $reviews->total()],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public function library(Request $request): array
+    {
+        $user = $request->user();
+        $library = Download::query()->where('user_id', $user->id)->orderByDesc('downloaded_at')->orderByDesc('id')->paginate(12, ['*'], 'library_page');
+        $applications = $this->applications($user)->visible()->whereIn('id', $library->getCollection()->pluck('application_id'))->get()->keyBy('id');
+
+        return [
             'library' => [
                 'data' => $library->getCollection()->map(fn (Download $download): array => [
                     'id' => $download->id,
@@ -135,8 +146,7 @@ class StoreQuery
                 ])->all(),
                 'meta' => $this->meta($library),
             ],
-            'reviews' => ['data' => ReviewResource::collection($reviews->getCollection())->resolve($request), 'meta' => $this->meta($reviews)],
-            'summary' => ['downloads_count' => $library->total(), 'reviews_count' => $reviews->total()],
+            'summary' => ['downloads_count' => $library->total()],
         ];
     }
 

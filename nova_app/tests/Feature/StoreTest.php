@@ -172,7 +172,8 @@ test('free installation is persistent idempotent and available to both store rol
     expect($first->fresh()->only(['price_paid', 'store_commission', 'developer_net']))->toBe([
         'price_paid' => '0.00', 'store_commission' => '0.00', 'developer_net' => '0.00',
     ]);
-    $this->getJson('/api/v1/profile')->assertJsonPath('summary.downloads_count', 1)->assertJsonPath('library.data.0.application.id', $application->id);
+    $this->getJson('/api/v1/profile')->assertJsonPath('summary.downloads_count', 1)->assertJsonMissingPath('library');
+    $this->getJson('/api/v1/library')->assertJsonPath('summary.downloads_count', 1)->assertJsonPath('library.data.0.application.id', $application->id);
 })->with([UserRole::User, UserRole::Developer]);
 
 test('paid and underage installation cannot create downloads', function (string $restriction) {
@@ -486,7 +487,7 @@ test('an unavailable library entry retains history without leaking hidden app de
     $download = Download::factory()->create();
     $user = User::query()->findOrFail($download->user_id);
     $download->application->category->update(['is_active' => false]);
-    $this->actingAs($user)->getJson('/api/v1/profile')->assertOk()
+    $this->actingAs($user)->getJson('/api/v1/library')->assertOk()
         ->assertJsonPath('summary.downloads_count', 1)
         ->assertJsonPath('library.data.0.application', null)
         ->assertJsonPath('library.data.0.available', false);

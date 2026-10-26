@@ -107,9 +107,8 @@ export type StoreProfile = {
   }
 }
 
-/** profile/Show; profile GET/PATCH responses. library_page and reviews_page paginate separately. */
-export type ProfileBundle = {
-  profile: StoreProfile
+/** GET /api/v1/library; library_page paginates installations. */
+export type LibraryBundle = {
   library: Page<{
     id: number
     application_id: number
@@ -117,6 +116,12 @@ export type ProfileBundle = {
     application: StoreApplication | null
     available: boolean
   }>
+  summary: { downloads_count: number }
+}
+
+/** Profile GET/PATCH responses; reviews_page paginates own reviews. */
+export type ProfileBundle = {
+  profile: StoreProfile
   reviews: Page<StoreReview>
   summary: { downloads_count: number; reviews_count: number }
 }

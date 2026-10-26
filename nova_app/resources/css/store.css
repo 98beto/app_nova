@@ -1405,7 +1405,7 @@
     gap: 18px;
     margin: 24px auto 34px;
 }
-.store-profile-summary > div {
+.store-profile-summary > .store-panel {
     display: flex;
     align-items: center;
     gap: 15px;
@@ -1427,9 +1427,20 @@
 }
 .store-library-item {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 15px;
     padding: 15px 18px;
+}
+.store-library-item > div {
+    flex: 1 1 12rem;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.store-library-review {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
 }
 .store-library-item .store-app-icon {
     width: 42px;
@@ -1501,15 +1512,12 @@
         grid-template-columns: 120px 1fr;
         gap: 16px;
     }
-    .store-profile-summary > div {
+    .store-profile-summary > .store-panel {
         gap: 10px;
         padding: 16px;
     }
     .store-profile-summary span {
         max-width: 100px;
-    }
-    .store-library-review {
-        display: none;
     }
     .store-discover-note {
         flex-wrap: wrap;
@@ -2024,7 +2032,7 @@
     .store-profile-summary {
         gap: 12px;
     }
-    .store-profile-summary > div {
+    .store-profile-summary > .store-panel {
         flex-wrap: wrap;
         padding: 15px;
         gap: 8px;
@@ -2073,7 +2081,9 @@
         font-size: 8px;
     }
     .store-library-review {
-        display: none;
+        flex: 0 0 calc(100% - 52px);
+        min-width: 0;
+        margin-left: 52px;
     }
     .store-mobile-panel-link {
         display: flex;

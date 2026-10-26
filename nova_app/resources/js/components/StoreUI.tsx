@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { login, logout, store } from '@/routes';
 import { dashboard } from '@/routes/developer';
 import { create } from '@/routes/developer/applications';
+import { index as libraryIndex } from '@/routes/library';
 import { show as profileShow } from '@/routes/profile';
 import { show as applicationShow } from '@/routes/store';
 import type { Auth } from '@/types/auth';
@@ -104,7 +105,8 @@ export function StoreLayout({
     const user = auth.user;
     const developerArea =
         url.startsWith('/developer') ||
-        (user?.role === 'developer' && url.startsWith('/profile'));
+        (user?.role === 'developer' &&
+            (url.startsWith('/profile') || url.startsWith('/library')));
     const feedback = useStoreFeedback();
     const links = developerArea
         ? [
@@ -123,11 +125,18 @@ export function StoreLayout({
                   selected: active === 'publish',
               },
               {
+                  key: 'library',
+                  label: 'Biblioteca',
+                  icon: 'download',
+                  href: libraryIndex.url(),
+                  selected: active === 'library',
+              },
+              {
                   key: 'profile',
                   label: 'Mi cuenta',
                   icon: 'user',
                   href: profileShow.url(),
-                  selected: active === 'profile' || active === 'library',
+                  selected: active === 'profile',
               },
           ]
         : [
@@ -149,7 +158,7 @@ export function StoreLayout({
                   key: 'library',
                   label: 'Biblioteca',
                   icon: 'download',
-                  href: `${profileShow.url()}#library`,
+                  href: libraryIndex.url(),
                   selected: active === 'library',
               },
               {

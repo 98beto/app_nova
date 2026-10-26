@@ -12,7 +12,7 @@ const router = useRouter()
 const developerArea = computed(
   () =>
     route.path.startsWith('/developer') ||
-    (route.path === '/profile' && auth.user?.role === 'developer'),
+    (['/profile', '/library'].includes(route.path) && auth.user?.role === 'developer'),
 )
 const links = computed(() =>
   developerArea.value
@@ -32,6 +32,12 @@ const links = computed(() =>
           icon: 'plus',
           active: route.path === '/developer/applications/create',
         },
+        {
+          to: '/library',
+          label: 'Biblioteca',
+          icon: 'download',
+          active: route.path === '/library',
+        },
         { to: '/profile', label: 'Mi cuenta', icon: 'user', active: route.path === '/profile' },
       ]
     : [
@@ -50,16 +56,16 @@ const links = computed(() =>
             (route.path !== '/store' || !!Object.keys(route.query).length),
         },
         {
-          to: '/profile#library',
+          to: '/library',
           label: 'Biblioteca',
           icon: 'download',
-          active: route.path === '/profile' && route.hash === '#library',
+          active: route.path === '/library',
         },
         {
           to: '/profile',
           label: 'Mi cuenta',
           icon: 'user',
-          active: route.path === '/profile' && route.hash !== '#library',
+          active: route.path === '/profile',
         },
       ],
 )

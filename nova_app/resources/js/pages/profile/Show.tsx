@@ -1,7 +1,6 @@
-import { Link, useForm, usePage } from '@inertiajs/react';
+import { Link, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import {
-    AppIcon,
     Avatar,
     Empty,
     FormErrors,
@@ -12,23 +11,17 @@ import {
     Section,
     StoreIcon,
     StoreLayout,
-    date,
     number,
     useStoreFeedback,
 } from '@/components/StoreUI';
-import { logout, store } from '@/routes';
+import { logout } from '@/routes';
 import { dashboard } from '@/routes/developer';
+import { index as libraryIndex } from '@/routes/library';
 import { update } from '@/routes/profile';
 import { show } from '@/routes/store';
 import type { ProfileBundle } from '@/types/store';
 
-export default function Show({
-    profile,
-    library,
-    reviews,
-    summary,
-}: ProfileBundle) {
-    const { url } = usePage();
+export default function Show({ profile, reviews, summary }: ProfileBundle) {
     const initialData = {
         name: profile.name,
         email: profile.email,
@@ -68,7 +61,7 @@ export default function Show({
         <StoreLayout
             title="Mi cuenta"
             subtitle="Tu espacio, tus aplicaciones, tus experiencias."
-            active={url.includes('#library') ? 'library' : 'profile'}
+            active="profile"
         >
             <section className="store-profile-card store-panel">
                 <Avatar name={profile.name} url={profile.avatar_url} large />
@@ -268,91 +261,17 @@ export default function Show({
                 </section>
             )}
             <section className="store-profile-summary">
-                <div className="store-panel">
+                <Link href={libraryIndex()} className="store-panel">
                     <StoreIcon name="download" />
                     <strong>{number(summary.downloads_count)}</strong>
                     <span>Aplicaciones en tu biblioteca</span>
-                </div>
+                </Link>
                 <div className="store-panel">
                     <StoreIcon name="star" />
                     <strong>{number(summary.reviews_count)}</strong>
                     <span>Experiencias compartidas</span>
                 </div>
             </section>
-            <Section
-                title="Mi biblioteca"
-                id="library"
-                className="store-library"
-                action={
-                    <Link href={store()} className="store-link">
-                        Descubrir más →
-                    </Link>
-                }
-            >
-                <div className="store-library-list">
-                    {library.data.length ? (
-                        library.data.map((item) => (
-                            <article
-                                key={item.id}
-                                className="store-panel store-library-item"
-                            >
-                                {item.available && item.application ? (
-                                    <>
-                                        <AppIcon
-                                            application={item.application}
-                                        />
-                                        <div>
-                                            <Link
-                                                href={show(item.application.id)}
-                                            >
-                                                <h3>{item.application.name}</h3>
-                                            </Link>
-                                            <p className="store-muted">
-                                                Instalada ·{' '}
-                                                {date(item.downloaded_at)}
-                                            </p>
-                                        </div>
-                                        <span className="store-badge store-status-approved">
-                                            INSTALADA
-                                        </span>
-                                        <Link
-                                            href={`${show.url(item.application.id)}#reviews`}
-                                            className="store-link store-library-review"
-                                        >
-                                            Escribir reseña →
-                                        </Link>
-                                    </>
-                                ) : (
-                                    <>
-                                        <span className="store-stat-icon">
-                                            <StoreIcon />
-                                        </span>
-                                        <div>
-                                            <h3>Aplicación no disponible</h3>
-                                            <p className="store-muted">
-                                                Instalada el{' '}
-                                                {date(item.downloaded_at)}
-                                            </p>
-                                        </div>
-                                        <span className="store-badge">
-                                            NO DISPONIBLE
-                                        </span>
-                                    </>
-                                )}
-                            </article>
-                        ))
-                    ) : (
-                        <Empty>
-                            Tu biblioteca está por descubrir
-                            <br />
-                            <Link href={store()} className="store-link">
-                                Explora el catálogo →
-                            </Link>
-                        </Empty>
-                    )}
-                </div>
-                <Pagination meta={library.meta} parameter="library_page" />
-            </Section>
             <Section
                 title="Mis reseñas"
                 id="my-reviews"

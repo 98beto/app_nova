@@ -3,11 +3,9 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useStore } from '@/stores/store'
 import type { ProfileInput, StoreProfile } from '@/types/store'
-import { dateLabel } from '@/lib/store'
 import StoreShell from '@/components/store/StoreShell.vue'
 import StoreState from '@/components/store/StoreState.vue'
 import StorePagination from '@/components/store/StorePagination.vue'
-import AppIcon from '@/components/store/AppIcon.vue'
 import ReviewCard from '@/components/store/ReviewCard.vue'
 import ImagePicker from '@/components/store/ImagePicker.vue'
 import StoreIcon from '@/components/store/StoreIcon.vue'
@@ -20,7 +18,7 @@ const bundle = computed(() => store.profile.data)
 const editing = ref(false)
 const saved = ref(false)
 const captureOperation = useRouteOperation()
-useResourceHash(() => !!bundle.value && !store.profile.loading)
+useResourceHash(() => route.hash === '#my-reviews' && !!bundle.value && !store.profile.loading)
 const avatar = ref<File | null>(null)
 const form = reactive({
   name: '',
@@ -31,7 +29,7 @@ const form = reactive({
 })
 function query() {
   const params = new URLSearchParams()
-  for (const key of ['library_page', 'reviews_page'])
+  for (const key of ['reviews_page'])
     if (route.query[key]) params.set(key, String(route.query[key]))
   return params.toString()
 }
@@ -39,7 +37,7 @@ function load() {
   return store.loadProfile(query())
 }
 watch(
-  () => [route.query.library_page, route.query.reviews_page],
+  () => route.query.reviews_page,
   () => {
     store.clearAction()
     editing.value = false
@@ -78,8 +76,7 @@ async function save() {
   if (saved.value) {
     editing.value = false
     avatar.value = null
-    if (route.query.library_page || route.query.reviews_page)
-      await router.replace({ query: {}, hash: route.hash })
+    if (route.query.reviews_page) await router.replace({ query: {}, hash: route.hash })
   }
 }
 function page(key: string, value: number, hash: string) {
@@ -210,60 +207,12 @@ async function logout() {
       <section class="store-profile-summary">
         <div class="store-panel">
           <StoreIcon name="download" /><strong>{{ bundle.summary.downloads_count }}</strong
-          ><span>Aplicaciones en tu biblioteca</span>
+          ><RouterLink to="/library" class="store-link">Aplicaciones en tu biblioteca</RouterLink>
         </div>
         <div class="store-panel">
           <StoreIcon name="star" /><strong>{{ bundle.summary.reviews_count }}</strong
           ><span>Experiencias compartidas</span>
         </div>
-      </section>
-      <section id="library" class="store-library">
-        <div class="store-section-heading">
-          <h2>Mi biblioteca</h2>
-          <RouterLink to="/store" class="store-link">Descubrir más →</RouterLink>
-        </div>
-        <StoreState :empty="!bundle.library.data.length" message="Tu biblioteca está por descubrir"
-          ><RouterLink class="store-link" to="/store">Explora el catálogo →</RouterLink></StoreState
-        >
-        <div class="store-library-list">
-          <article
-            v-for="item in bundle.library.data"
-            :key="item.id"
-            class="store-panel store-library-item"
-          >
-            <template v-if="item.application && item.available"
-              ><AppIcon
-                :url="item.application.icon_url"
-                :name="item.application.name"
-                :id="item.application.id"
-              />
-              <div>
-                <RouterLink :to="`/store/${item.application_id}`"
-                  ><h3>{{ item.application.name }}</h3></RouterLink
-                >
-                <p class="store-muted">Instalada · {{ dateLabel(item.downloaded_at) }}</p>
-              </div>
-              <span class="store-badge store-status-approved">INSTALADA</span
-              ><RouterLink
-                :to="`/store/${item.application_id}#reviews`"
-                class="store-link store-library-review"
-                >Escribir reseña →</RouterLink
-              ></template
-            ><template v-else
-              ><span class="store-stat-icon"><StoreIcon name="grid" /></span>
-              <div>
-                <h3>Aplicación no disponible</h3>
-                <p class="store-muted">Instalada el {{ dateLabel(item.downloaded_at) }}</p>
-              </div>
-              <span class="store-badge">NO DISPONIBLE</span></template
-            >
-          </article>
-        </div>
-        <StorePagination
-          :meta="bundle.library.meta"
-          label="Páginas de biblioteca"
-          @change="page('library_page', $event, '#library')"
-        />
       </section>
       <section id="my-reviews" class="store-related">
         <div class="store-section-heading">

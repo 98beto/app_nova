@@ -1453,9 +1453,20 @@
 }
 .store-library-item {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 15px;
   padding: 15px 18px;
+}
+.store-library-item > div {
+  flex: 1 1 12rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.store-library-review {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 .store-library-item .store-app-icon {
   width: 42px;
@@ -1533,9 +1544,6 @@
   }
   .store-profile-summary span {
     max-width: 100px;
-  }
-  .store-library-review {
-    display: none;
   }
   .store-discover-note {
     flex-wrap: wrap;
@@ -2106,7 +2114,9 @@
     font-size: 8px;
   }
   .store-library-review {
-    display: none;
+    flex: 0 0 calc(100% - 52px);
+    min-width: 0;
+    margin-left: 52px;
   }
   .store-mobile-panel-link {
     display: flex;
