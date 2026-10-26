@@ -3,8 +3,8 @@
 use App\Enums\UserRole;
 use App\Models\User;
 
-test('redirige a los visitantes desde la página de inicio al inicio de sesión', function () {
-    $this->get(route('home'))->assertRedirect(route('login'));
+test('redirige a los visitantes desde la página de inicio a la tienda', function () {
+    $this->get(route('home'))->assertRedirect(route('store'));
 });
 
 test('redirige a los usuarios autenticados desde la página de inicio según su rol', function (
@@ -18,6 +18,6 @@ test('redirige a los usuarios autenticados desde la página de inicio según su 
         ->assertRedirect(route($routeName));
 })->with([
     'usuario' => [UserRole::User, 'store'],
-    'desarrollador' => [UserRole::Developer, 'developer.dashboard'],
+    'desarrollador' => [UserRole::Developer, 'store'],
     'administrador' => [UserRole::Admin, 'admin.dashboard'],
 ]);

@@ -31,6 +31,8 @@ class RegisteredUserController extends Controller
         $request->session()->regenerate();
         $auditLogger->record('register', $user, $request);
 
+        $request->session()->forget('url.intended');
+
         return redirect()->to($this->homePath($user));
     }
 
@@ -38,7 +40,7 @@ class RegisteredUserController extends Controller
     {
         return match ($user->role) {
             UserRole::User => route('store'),
-            UserRole::Developer => route('developer.dashboard'),
+            UserRole::Developer => route('store'),
             UserRole::Admin => route('admin.dashboard'),
         };
     }

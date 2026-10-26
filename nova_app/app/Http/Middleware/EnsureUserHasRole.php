@@ -14,12 +14,12 @@ class EnsureUserHasRole
      *
      * @param  Closure(Request): (Response)  $next
      */
-    public function handle(Request $request, Closure $next, string $role): Response
+    public function handle(Request $request, Closure $next, string ...$roles): Response
     {
-        $expectedRole = UserRole::tryFrom($role);
+        $expectedRoles = array_filter(array_map(UserRole::tryFrom(...), $roles));
 
         abort_unless(
-            $expectedRole !== null && $request->user()?->role === $expectedRole,
+            in_array($request->user()?->role, $expectedRoles, true),
             403,
             'No tienes permiso para acceder a esta sección.',
         );

@@ -29,6 +29,8 @@ class AuthenticatedSessionController extends Controller
         $user = $request->user();
         $auditLogger->record('login', $user, $request);
 
+        $request->session()->forget('url.intended');
+
         return redirect()->to($this->homePath($user));
     }
 
@@ -50,7 +52,7 @@ class AuthenticatedSessionController extends Controller
     {
         return match ($user->role) {
             UserRole::User => route('store'),
-            UserRole::Developer => route('developer.dashboard'),
+            UserRole::Developer => route('store'),
             UserRole::Admin => route('admin.dashboard'),
         };
     }

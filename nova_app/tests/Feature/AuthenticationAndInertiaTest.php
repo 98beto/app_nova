@@ -71,7 +71,7 @@ test('registra un desarrollador con un perfil de desarrollador pendiente', funct
 
     $response = $this->post(route('register.store'), $payload);
 
-    $response->assertRedirect(route('developer.dashboard'));
+    $response->assertRedirect(route('store'));
     $user = User::query()->where('email', $payload['email'])->firstOrFail();
 
     $this->assertAuthenticatedAs($user);
@@ -128,28 +128,32 @@ test('cierra la sesión de un usuario autenticado y lo redirige al inicio de ses
     $this->assertGuest();
 });
 
-test('autoriza a cada rol únicamente para acceder a su propio panel', function () {
-    foreach (['store', 'developer.dashboard', 'admin.dashboard'] as $routeName) {
+test('comparte la tienda pública y protege los paneles por rol', function () {
+    $this->get(route('store'))->assertOk();
+    foreach (['developer.dashboard', 'admin.dashboard'] as $routeName) {
         $this->get(route($routeName))->assertRedirect(route('login'));
     }
 
     $routesByRole = [
-        UserRole::User->value => ['store', 'developer.dashboard', 'admin.dashboard'],
-        UserRole::Developer->value => ['developer.dashboard', 'store', 'admin.dashboard'],
-        UserRole::Admin->value => ['admin.dashboard', 'store', 'developer.dashboard'],
+        UserRole::User->value => [['store'], ['developer.dashboard', 'admin.dashboard']],
+        UserRole::Developer->value => [['store', 'developer.dashboard'], ['admin.dashboard']],
+        UserRole::Admin->value => [['store', 'admin.dashboard'], ['developer.dashboard']],
     ];
 
-    foreach ($routesByRole as $role => [$allowedRoute, $forbiddenRoute, $otherForbiddenRoute]) {
+    foreach ($routesByRole as $role => [$allowedRoutes, $forbiddenRoutes]) {
         $user = User::factory()->create(['role' => $role]);
 
-        $this->actingAs($user)->get(route($allowedRoute))->assertOk();
-        $this->actingAs($user)->get(route($forbiddenRoute))->assertForbidden();
-        $this->actingAs($user)->get(route($otherForbiddenRoute))->assertForbidden();
+        foreach ($allowedRoutes as $routeName) {
+            $this->actingAs($user)->get(route($routeName))->assertOk();
+        }
+        foreach ($forbiddenRoutes as $routeName) {
+            $this->actingAs($user)->get(route($routeName))->assertForbidden();
+        }
     }
 
     foreach ([UserStatus::Suspended, UserStatus::Disabled] as $status) {
         $this->actingAs(User::factory()->state(['status' => $status])->create())
-            ->get(route('store'))
+            ->get(route('profile.show'))
             ->assertForbidden();
     }
 });
